@@ -1,10 +1,6 @@
 SET NOCOUNT ON
 GO
 
-PRINT 'Using Master database'
-USE master
-GO
-
 PRINT 'Checking for the existence of this procedure'
 IF (SELECT OBJECT_ID('sp_generate_merge','P')) IS NOT NULL --means, the procedure already exists
  BEGIN
@@ -36,7 +32,8 @@ CREATE PROC sp_generate_merge
  @results_to_text bit = 0, -- When 1, outputs results to grid/messages window. When 0, outputs MERGE statement in an XML fragment.
  @include_rowsaffected bit = 1, -- When 1, a section is added to the end of the batch which outputs rows affected by the MERGE
  @nologo bit = 0, -- When 1, the "About" comment is suppressed from output
- @batch_separator VARCHAR(50) = 'GO' -- Batch separator to use
+ @batch_separator VARCHAR(50) = 'GO', -- Batch separator to use
+ @mergeStatementOutput nvarchar(max) OUTPUT
 )
 AS
 BEGIN
@@ -633,7 +630,8 @@ SET @output += @b + ''
 IF @results_to_text = 1
 BEGIN
 	--output the statement to the Grid/Messages tab
-	SELECT @output;
+	SELECT @output as output;
+print @output
 END
 ELSE
 BEGIN
@@ -646,6 +644,10 @@ BEGIN
 	PRINT 'note that the results may be truncated by your SQL client to 4000 nchars.'
 END
 
+-- output
+set @mergeStatementOutput = @output
+
+
 SET NOCOUNT OFF
 RETURN 0 --Success. We are done!
 END
@@ -655,13 +657,6 @@ GO
 PRINT 'Created the procedure'
 GO
 
-
---Mark the proc as a system object to allow it to be called transparently from other databases
-EXEC sp_MS_marksystemobject sp_generate_merge
-GO
-
-PRINT 'Granting EXECUTE permission on sp_generate_merge to all users'
-GRANT EXEC ON sp_generate_merge TO public
 
 SET NOCOUNT OFF
 GO
